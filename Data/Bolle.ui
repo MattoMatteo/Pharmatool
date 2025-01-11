@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>908</width>
+    <height>642</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Numero DDT</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="2">
+    <widget class="QLabel" name="label_2">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Data DDT</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3" rowspan="2">
+    <widget class="QPushButton" name="pushButton_carica">
+     <property name="text">
+      <string>CARICA</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLineEdit" name="lineEdit_2_NumeroBolla"/>
+   </item>
+   <item row="1" column="2">
+    <widget class="QLineEdit" name="lineEdit_DataBolla"/>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QLabel" name="label_3">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Cerca in banca dati</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3" rowspan="2">
+    <widget class="QPushButton" name="pushButton_cerca">
+     <property name="text">
+      <string>Cerca</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="3">
+    <widget class="QLineEdit" name="lineEdit_cerca"/>
+   </item>
+   <item row="4" column="0" colspan="3">
+    <widget class="QTableWidget" name="tableWidget_FarmaciInseriti">
+     <column>
+      <property name="text">
+       <string>Codice AIC</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Descrizione</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Prezzo</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Ord</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Già car</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>In cons</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Prz Farmacia</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Sosp</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Scad</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Costo</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Targatura</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QScrollArea" name="scrollArea_InfoFarmaco">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>289</width>
+        <height>526</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

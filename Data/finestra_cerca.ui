@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1064</width>
+    <height>496</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_4">
+   <item row="0" column="0">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="1">
+      <widget class="QGroupBox" name="groupBox_filtri_ricerca">
+       <property name="title">
+        <string>Filtri Ricerca</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="pulsante_cerca">
+          <property name="text">
+           <string>Cerca</string>
+          </property>
+          <property name="autoDefault">
+           <bool>false</bool>
+          </property>
+          <property name="default">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="2">
+         <widget class="QComboBox" name="comboBox">
+          <item>
+           <property name="text">
+            <string>Denominazione e Confezione</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Descrizione Gruppo</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Principio Attivo</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Titolare AIC</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Codice AIC</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Cod. Gruppo Equivalenza</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="etichetta_filtri">
+          <property name="text">
+           <string>Ricerca per:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="pushButton_inserisci">
+          <property name="text">
+           <string>Inserisci</string>
+          </property>
+          <property name="autoDefault">
+           <bool>false</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QGroupBox" name="groupBox_checkbox_mostra_risultati">
+       <property name="title">
+        <string>Mostra Risultati</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QCheckBox" name="checkBox_Denominazione_e_Confezione">
+          <property name="text">
+           <string>Denominazione e Confezione</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_Principio_Attivo">
+          <property name="text">
+           <string>Principio Attivo</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_Prezzo">
+          <property name="text">
+           <string>Prezzo</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+          <property name="tristate">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_Titolare_AIC">
+          <property name="text">
+           <string>Titolare AIC</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_Codice_AIC">
+          <property name="text">
+           <string>Codice AIC</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_Cod_Gruppo_Equivalenza">
+          <property name="text">
+           <string>Cod. Gruppo Equivalenza</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="0" column="0" rowspan="3">
+      <widget class="QGroupBox" name="grupBox_cerca_farmaci">
+       <property name="title">
+        <string>Cerca Farmaci</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QLineEdit" name="input_ricerca">
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QTableWidget" name="tableWidget_risultati">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QGroupBox" name="groupBox_vuota">
+       <property name="title">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>input_ricerca</tabstop>
+  <tabstop>pulsante_cerca</tabstop>
+  <tabstop>pushButton_inserisci</tabstop>
+  <tabstop>comboBox</tabstop>
+  <tabstop>checkBox_Denominazione_e_Confezione</tabstop>
+  <tabstop>checkBox_Principio_Attivo</tabstop>
+  <tabstop>checkBox_Prezzo</tabstop>
+  <tabstop>checkBox_Titolare_AIC</tabstop>
+  <tabstop>checkBox_Codice_AIC</tabstop>
+  <tabstop>checkBox_Cod_Gruppo_Equivalenza</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>
