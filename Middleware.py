@@ -51,6 +51,7 @@ class Middlware_Database():
         ID_Farmaco                  =   "ID Farmaco"
         Forma_farmaceutica          =   "Forma farmaceutica"
         Prezzo_attuale              =   "Prezzo attuale"
+        Cl                          =   "Cl"
     
     #Vari Database implementati
     class Middleware_SQLITE():
@@ -78,6 +79,8 @@ class Middlware_Database():
                 return Database.Banca_dati.nome_tabella_Farmaco[1]+"."+Database.Banca_dati.prezzo
             elif type==Middlware_Database.tipoRicercaBancadati.Titolare_AIC:
                 return Database.Banca_dati.nome_tabella_Azienda[1]+"."+Database.Banca_dati.nome_azienda
+            elif type==Middlware_Database.tipoRicercaBancadati.Cl:
+                return Database.Banca_dati.nome_tabella_Farmaco[1]+"."+Database.Banca_dati.cl
         def get_all_FarmacoVendita_data_SQLITE() -> list[Internal_data.Farmaco_vendita]:
             farmaci = Database.execute_query(f""" SELECT b.{Database.Banca_dati.codice_aic},
                             b.{Database.Banca_dati.descrizione_farmaco},
@@ -217,7 +220,7 @@ class Middlware_Database():
             return Database.ricette.get_columnValue(id=ID_ricetta,column=Database.ricette.numero)
 
         #FUNZIONI BANCA DATI
-        def cerca_farmaco_SQLITE(input:str,tipo_di_ricerca:Enum,colonne_da_visualizzare:list[Enum])->int:
+        def cerca_farmaco_SQLITE(input:str,tipo_di_ricerca:Enum,colonne_da_visualizzare:list[Enum])->list:
             tipo_di_ricerca=Middlware_Database.Middleware_SQLITE.convert_tipoRicercaBancadati_SQLITE(type=tipo_di_ricerca)
             colonne_da_visualizzare_convertito=[]
             for colonna in colonne_da_visualizzare:
@@ -382,10 +385,8 @@ class Middlware_Database():
             return self.Middleware_SQLITE.get_ricettaNumber_SQLITE(ID_ricetta=ID_ricetta)
 
     #FUNZIONI BANCA DATI
-    def cerca_farmaco(self,input:str,tipo_di_ricerca:Enum,colonne_da_visualizzare:list[Enum])->int:
+    def cerca_farmaco(self,input:str,tipo_di_ricerca:Enum,colonne_da_visualizzare:list[Enum])->list:
         if self.chosenDatabase==self.chosenDatabaseMiddleware.SQLITE:
             return self.Middleware_SQLITE.cerca_farmaco_SQLITE(input=input,tipo_di_ricerca=tipo_di_ricerca,colonne_da_visualizzare=colonne_da_visualizzare)
-            
+
 middlwareDatabase = Middlware_Database(activeDatabase=Middlware_Database.chosenDatabaseMiddleware.SQLITE)
-
-
