@@ -71,22 +71,22 @@ class DoctorStoned():
                 time.sleep(10)
         return "ERROR"
 
-    def _build_prompt(self, farmaco: str, para:str) -> str:
+    def _build_prompt(self, reference_product: str, neighbor_product:str) -> str:
         return f"""
         Sei un assistente esperto in farmacologia.
         Compito:
-        1) Ti verrà fornita la scheda tecnica di un farmaco (primo elemento della lista) e di un parafarmaco (secondo elemento della lista).
-        2) Anallizzali e decidi se quel parafarmaco è adatto come terapia complementare rispetto al farmaco.
-        3) Se decidi che esiste una correlazione valida, descrivermi brevemente a cosa serve il parafarmaco e spiega perché lo hai scelto.
+        1) Ti verrà fornita la scheda tecnica di due prodotti farmaceutici, che possono essere Farmaci o Parafarmaci.
+        2) Anallizzali e decidi se il primo elemento della lista fornito è adatto come terapia complementare rispetto al secondo elemento.
+        3) Se decidi che esiste una correlazione valida, descrivermi brevemente a cosa serve il secondo elemento della lista e spiega perché lo hai scelto.
         4) Se decidi che NON esiste una valida e diretta correlazione tra i due prodotti oppure se hai il dubbio, rispondi semplicemente con None.
         5) La risposta finale deve essere solo una stringa (in caso di correlazione) oppure None (in caso contrario).
     
         Regole:
         - Usa solo i nomi forniti.
-        - Se non sei assolutamente certo della correlazione tra farmaco e parafarmaco, restituisci esclusivamente None.
+        - Se non sei assolutamente certo della correlazione tra i due prodotti, restituisci esclusivamente None.
         - Non fare assunzioni o deduzioni: la certezza deve essere totale. Ne va della salute della persona.
         - Usa un linguaggio semplice e chiaro comprensibile anche a chi non è del settore
-        - Non inventare nulla, rispondi solo se presente nella sezione parafarmaci
+        - Non inventare nulla, rispondi solo con informazioni presenti nella scheda tecnica dei prodotti che ti viene fornita.
         - Descrizione max 20 parole per voce.
         - Restituisci SOLO JSON valido, quindi None senza virgolette (no stringa).
 
@@ -101,8 +101,8 @@ class DoctorStoned():
         output = "Integratore che supporta le vie urinarie e riduce le cistiti; scelto perché complementare all'azione di Monuril."
 
         Ora tocca a te:
-        input = [{farmaco},
-                {para}]
+        input = [{reference_product},
+                {neighbor_product}]
         output = 
         """.strip()
 
@@ -118,26 +118,26 @@ class DoctorStoned():
             dict: Restituisce un dizionario del tipo: {file_name_farmaco: [{"file_name_parafarmaco": str, "response": str}, ...] }
         """
         # Creiamo il dizionario con le info del farmaco e il suo dump
-        farmaco_dict = {"file_name": similarity["farmaco"]["file_name"], "content": similarity["farmaco"]["content"]}
-        farmaco_dump = json.dumps(farmaco_dict)
+        reference_product_dict = {"file_name": similarity["reference_product"]["file_name"], "content": similarity["reference_product"]["content"]}
+        reference_product_dump = json.dumps(reference_product_dict)
 
         # Creiamo la lista dei simili
-        lista_simili = similarity["simili"]
+        neighbor_products_list = similarity["neighbor_products"]
 
         # Cicliamo su tutti i suoi simili
         llm_response = {}
-        llm_response[farmaco_dict["file_name"]] = {}
-        for para in lista_simili:
-            para_dict = {"file_name": para["parafarmaco"]["file_name"], "content": para["parafarmaco"]["content"]}
-            para_dump = json.dumps(para_dict)
-            llm_response[farmaco_dict["file_name"]][para_dict["file_name"]] = self._call_llm(prompt=self._build_prompt(farmaco_dump, para_dump),
+        llm_response[reference_product_dict["file_name"]] = {}
+        for para in neighbor_products_list:
+            neighbor_product_dict = {"file_name": para["product"]["file_name"], "content": para["product"]["content"]}
+            neighbor_product_dump = json.dumps(neighbor_product_dict)
+            llm_response[reference_product_dict["file_name"]][neighbor_product_dict["file_name"]] = self._call_llm(prompt=self._build_prompt(reference_product_dump, neighbor_product_dump),
                                                                                             system_prompt="",
                                                                                             model=self.model_id,
                                                                                             temperature=temperature)
-            if llm_response[farmaco_dict["file_name"]][para_dict["file_name"]] == "None":
-                llm_response[farmaco_dict["file_name"]][para_dict["file_name"]] = None
-            elif llm_response[farmaco_dict["file_name"]][para_dict["file_name"]] == "ERROR":
-                llm_response[farmaco_dict["file_name"]].pop(para_dict["file_name"])
+            if llm_response[reference_product_dict["file_name"]][neighbor_product_dict["file_name"]] == "None":
+                llm_response[reference_product_dict["file_name"]][neighbor_product_dict["file_name"]] = None
+            elif llm_response[reference_product_dict["file_name"]][neighbor_product_dict["file_name"]] == "ERROR":
+                llm_response[reference_product_dict["file_name"]].pop(neighbor_product_dict["file_name"])
                 continue
         return llm_response
 
@@ -151,59 +151,95 @@ class DoctorStoned():
         # Define if it is a drugs or not
         info = middlwareDatabase.cerca_farmaco(aic,
                                         middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
-                                        [middlwareDatabase.tipoRicercaBancadati.Cl])
+                                        [middlwareDatabase.tipoRicercaBancadati.Cl,
+                                         middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione])
         cl = None
         if info and len(info) > 0:
             if info[0] and len(info[0]) > 0:
                 cl = info[0][0]
+                denominazione = info[0][1]
         if not cl:
             return None
-        
-        # Convert aic to corrispondent "foglietto illustrativo" becose they are embedded like this
-        file_name_foglietto = next((d[aic].strip(".txt") for d in self.mapper_drugs_foglietto if aic in d), None)
-        if not file_name_foglietto: # There isn't a foglietto associated, so can't find similarity abort.
-            return None
+
         # Depending of the result, find similaries
-        if cl != "P":
+        if cl != "P": # <-- Drugs so find k para similarity
+            # Convert aic to corrispondent "foglietto illustrativo" becose they are embedded like this
+            file_name_foglietto = next((d[aic].strip(".txt") for d in self.mapper_drugs_foglietto if aic in d), None)
+            if not file_name_foglietto: # There isn't a foglietto associated, so can't find similarity abort.
+                return None
+            # Find index in the chunks drugs that will be the same in faiss index
             aic_faiss_index = next((i for i, item in enumerate(self.chunks_drug) if item["file_name"] == file_name_foglietto), None)
             if aic_faiss_index:
+                # Recostruction embedding from faiss index
                 embedding = self.faiss_drugs.reconstruct(aic_faiss_index)
                 drugs_embeddings = np.array(embedding, dtype="float32").reshape(1, -1)
+                # Finally use search (cosen similarity)
                 _, indices = self.faiss_para.search(drugs_embeddings, k)
-                return {"farmaco": next(item for item in self.chunks_drug if item["file_name"] == file_name_foglietto),
-                        "simili": [{"parafarmaco": self.chunks_para[x]} for x in indices[0]]}
+                # Compose response struct for next step of pipeline
+                def _convert_chunk_para_file_name_from_denominazione_to_aic(denominazione:dict, aic:str):
+                    denominazione["file_name"] = aic
+                    return denominazione
+                return {"reference_product": next(item for item in self.chunks_drug if item["file_name"] == file_name_foglietto),
+                        "neighbor_products": [{"product": _convert_chunk_para_file_name_from_denominazione_to_aic(self.chunks_para[x], aic)} for x in indices[0]]}
+            else:
+                return None
+        else:   # <-- Para so find k drugs foglietto similarity
+            # We can use Descrizione prodotto to find chunk index, same as faiss
+            aic_faiss_index = next((i for i, item in enumerate(self.chunks_para) if item["file_name"] == denominazione), None)
+            if aic_faiss_index:
+                # Recostruction embedding from faiss index
+                embedding = self.faiss_para.reconstruct(aic_faiss_index)
+                para_embeddings = np.array(embedding, dtype="float32").reshape(1, -1)
+                # Finally use search (cosen similarity)
+                _, indices = self.faiss_drugs.search(para_embeddings, k)
+                # find a random drugs that associate to their foglietto
+                def _get_random_drugs_from_foglietto(foglietto:str):
+                    for coppia in self.mapper_drugs_foglietto:
+                        for aic, foglietto_file_name in coppia.items():
+                            if foglietto_file_name.strip(".txt") == foglietto["file_name"]:
+                                foglietto["file_name"] = aic
+                                return foglietto
+                    return None
+                # Compose response struct for next step of pipeline
+                return {"reference_product": next(item for item in self.chunks_para if item["file_name"] == denominazione),
+                        "neighbor_products": [{"product": _get_random_drugs_from_foglietto(self.chunks_drug[x])} for x in indices[0]]}
             else:
                 return None
 
     # Public function
 
-    def get_similarity_para(self, aic:str, k:int = 10, temperature:float = 0.3):
+    def get_similarity_product(self, aic:str, k:int = 10, temperature:float = 0.3):
         """
         Call pipeline: similarity embedded para, validation LLM.
         Args:
-            aic(str): AIC of a given Drugs.
+            aic(str): AIC of a given get_similarity_product.
             k(int): Number of similarity given by embedding (not final result).
             temperature(float): temperature of LLM validation.
         Returns:
             list[tuple]: List of para_id and the LLM explain
         """
 
-        para_chunks_similarities = self._find_similarity(aic, k)
-        para_chunks_validated = self._validate_drug_similarity(para_chunks_similarities, temperature)
+        product_chunks_similarities = self._find_similarity(aic, k)
+        if not product_chunks_similarities:
+            return None
+        product_chunks_validated = self._validate_drug_similarity(product_chunks_similarities, temperature)
+        if not product_chunks_validated:
+            return None
         list_para_id = []
-        for chunk in para_chunks_validated.values():
-            for para_name, llm_comment in chunk.items():
-                if not llm_comment:
+        for chunk in product_chunks_validated.values():
+            for product_name, llm_comment in chunk.items():
+                if not llm_comment: # <- Not validate from LLM
                     continue
                 # Find id by file name (same as Denominazione e confezione)
-                info = middlwareDatabase.cerca_farmaco(para_name,
-                        middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione,
+                info = middlwareDatabase.cerca_farmaco(product_name,
+                        middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
                         [middlwareDatabase.tipoRicercaBancadati.ID_Farmaco])
                 # Ensure results
-                if info and len(info) > 0:
-                    if info[0] and len(info[0]) > 0:
-                        para_id = info[0][0]
-                if not para_id:
+                if info and len(info) > 0 and info[0] and len(info[0]) > 0:
+                    para_id = info[0][0]
+                    if not para_id:
+                        return None
+                else:
                     return None
                 # Add to list the tuple of id and LLM response
                 list_para_id.append((para_id, llm_comment))
@@ -224,4 +260,8 @@ doctor_stoned = DoctorStoned(API_KEY, "openai/gpt-oss-120b",
                              path_mapper_drugs_foglietto= "./Data/mapper_aic_foglietto_farmaco.json")
 
 if __name__== "__main__":
-    print(doctor_stoned.get_similarity_para("025680024"))
+    response = doctor_stoned.get_similarity_product("039352012")
+    if response:
+        print(json.dumps(response, indent=2))
+    else:
+        print(response)

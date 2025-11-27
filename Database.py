@@ -36,6 +36,7 @@ class Banca_Dati():
         #tupla con nomi e prefissi tabelle
         self.nome_tabella_Farmaco=("Farmaco","f")
         self.nome_tabella_Azienda=("Azienda","a")
+        self.nome_tabella_Scheda_tecnica=("Scheda_tecnica","s")
         #nomi colonne tabella Farmaco
         self.Farmaco_primarykey="Codice"
         self.codice_aic="Codice_AIC"
@@ -64,52 +65,63 @@ class Banca_Dati():
         self.regime_SSN="Regime_SSN"
         self.note="Note_prescrizione"
         self.codice_azienda="Codice_Azienda"
+        self.codice_scheda_tecnica="Codice_Scheda_tecnica"
         #nomi colonne tabella Azienda
         self.Azienda_primarykey="Codice"
         self.nome_azienda="Nome"
         self.importazione="Import"
+        #nomi colonne tabella Scheda_tecnica
+        self.Scheda_tecnica_primarykey="Codice"
+        self.scheda_completa="scheda_completa"
     def create_tables(self):
         query=[f"""
-                DROP TABLE IF EXISTS {self.nome_tabella_Farmaco[0]};""",
-                    f"""
-                CREATE TABLE {self.nome_tabella_Farmaco[0]} (
-                {self.Farmaco_primarykey} INTEGER PRIMARY KEY AUTOINCREMENT,
-                {self.codice_aic} TEXT,
-                {self.descrizione_farmaco} TEXT,
-                {self.forma_farmaceutica} TEXT,
-                {self.principio_attivo} TEXT,
-                {self.atc} TEXT,
-                {self.cod_gruppo} TEXT,
-                {self.descrizione_gruppo} TEXT,
-                {self.tipo_prodotto} TEXT,
-                {self.doping} TEXT,
-                {self.glutine} TEXT,
-                {self.stupefacente} TEXT,
-                {self.temperatura} TEXT,
-                {self.mesi_validità} TEXT,
-                {self.validità_dopo_apertura} TEXT,
-                {self.iva} TEXT,
-                {self.prezzo} TEXT,
-                {self.importo_assistito} TEXT,
-                {self.prezzo_rimborso} TEXT,
-                {self.obbligatorietà} TEXT,
-                {self.particolarità} TEXT,
-                {self.cl} TEXT,
-                {self.prescrivibilità} TEXT,
-                {self.tipo_ricetta} TEXT,
-                {self.regime_SSN} TEXT,
-                {self.note} TEXT,
-                {self.codice_azienda} INTEGER,
-                FOREIGN KEY ({self.codice_azienda}) REFERENCES {self.nome_tabella_Azienda[0]}({self.Azienda_primarykey})
-                );""",
-                f"""
-                DROP TABLE IF EXISTS {self.nome_tabella_Azienda[0]};""",           
-                f"""
-                CREATE TABLE {self.nome_tabella_Azienda[0]} (
-                {self.Azienda_primarykey} INTEGER PRIMARY KEY AUTOINCREMENT,
-                {self.nome_azienda} TEXT,
-                {self.importazione} TEXT
-                );"""]
+            DROP TABLE IF EXISTS {self.nome_tabella_Azienda[0]};""",           
+            f"""
+            CREATE TABLE {self.nome_tabella_Azienda[0]} (
+            {self.Azienda_primarykey} INTEGER PRIMARY KEY AUTOINCREMENT,
+            {self.nome_azienda} TEXT,
+            {self.importazione} TEXT);""",
+            f"""
+            DROP TABLE IF EXISTS {self.nome_tabella_Scheda_tecnica[0]};""",
+            f"""
+            CREATE TABLE {self.nome_tabella_Scheda_tecnica[0]} (
+            {self.Scheda_tecnica_primarykey} INTEGER PRIMARY KEY AUTOINCREMENT,
+            {self.scheda_completa} TEXT);""",
+            f"""
+            DROP TABLE IF EXISTS {self.nome_tabella_Farmaco[0]};""",
+            f"""
+            CREATE TABLE {self.nome_tabella_Farmaco[0]} (
+            {self.Farmaco_primarykey} INTEGER PRIMARY KEY AUTOINCREMENT,
+            {self.codice_aic} TEXT,
+            {self.descrizione_farmaco} TEXT,
+            {self.forma_farmaceutica} TEXT,
+            {self.principio_attivo} TEXT,
+            {self.atc} TEXT,
+            {self.cod_gruppo} TEXT,
+            {self.descrizione_gruppo} TEXT,
+            {self.tipo_prodotto} TEXT,
+            {self.doping} TEXT,
+            {self.glutine} TEXT,
+            {self.stupefacente} TEXT,
+            {self.temperatura} TEXT,
+            {self.mesi_validità} TEXT,
+            {self.validità_dopo_apertura} TEXT,
+            {self.iva} TEXT,
+            {self.prezzo} TEXT,
+            {self.importo_assistito} TEXT,
+            {self.prezzo_rimborso} TEXT,
+            {self.obbligatorietà} TEXT,
+            {self.particolarità} TEXT,
+            {self.cl} TEXT,
+            {self.prescrivibilità} TEXT,
+            {self.tipo_ricetta} TEXT,
+            {self.regime_SSN} TEXT,
+            {self.note} TEXT,
+            {self.codice_azienda} INTEGER,
+            {self.codice_scheda_tecnica} INTEGER,
+            FOREIGN KEY ({self.codice_azienda}) REFERENCES {self.nome_tabella_Azienda[0]}({self.Azienda_primarykey}),
+            FOREIGN KEY ({self.codice_scheda_tecnica}) REFERENCES {self.nome_tabella_Scheda_tecnica[0]}({self.Scheda_tecnica_primarykey})
+            );"""]
         for q in query:
             execute_query(query=q,commit=True)
 
@@ -125,15 +137,17 @@ class Banca_Dati():
             WHERE type = 'table'; 
             """)
         count=0
-        n_table=2 #tabella Farmaco e Azienda
+        n_table=3 #tabella Farmaco, Azienda e Scheda tecnica
         for table in tables:
-            if table[0] == self.nome_tabella_Farmaco[0] or table[0]== self.nome_tabella_Azienda[0]:
+            if table[0] == self.nome_tabella_Farmaco[0] or table[0] == self.nome_tabella_Azienda[0] or table[0] == self.nome_tabella_Scheda_tecnica[0]:
                 count=count+1
+        print(count)
         if count==n_table:
             return True
         return False
     def populate_row(self, row, cursor):
         id_azienda=self.__insert_or_get_Azienda(cursor, row["Ditta produttrice"])
+        id_scheda_tecnica=self.__insert_scheda_tecnica(cursor=cursor,scheda_completa=row["scheda_tecnica_completa"])
         id_farmaco=self.__insert_data(cursor=cursor,Codice_AIC=row["Codice AIC"],Descrizione_prodotto=row["Descrizione prodotto"],
                                             Forma_farmaceutica=row["Forma farmaceutica"],Principio_Attivo=row["Principio Attivo"],
                                             ATC_Descrizione=row["A.T.C. Descrizione"],Cod_gruppo=row["Cod. gruppo"],Descrizione_gruppo=row["Descrizione gruppo"],
@@ -142,8 +156,22 @@ class Banca_Dati():
                                             Iva=row["Iva"], Prz_Att=row["Prz. Att."],Imp_Assist=row["Imp.Assist"],PrzRimE=row["PrzRimE."],
                                             Obbligatorietà=row["Obbligatorieta'"],Particolarità=row["Particolarita'"],Cl=row["Cl"],Prescrivibilità=row["Prescrivibilita'"],
                                             Tipo_ricetta=row["Tipo ricetta"],Regime_SSN=row["Regime SSN"],Note_prescrizione=row["Note prescrizione"],
-                                            codice_azienda=id_azienda)
-        return id_farmaco      
+                                            codice_azienda=id_azienda, codice_scheda_tecnica=id_scheda_tecnica)
+        return id_farmaco 
+    def __insert_scheda_tecnica(self, cursor: sqlite3.Cursor, scheda_completa:str):
+        try:
+            cursor.execute(f"SELECT {self.Scheda_tecnica_primarykey} FROM {self.nome_tabella_Scheda_tecnica[0]} WHERE '{self.scheda_completa}' = ?", (scheda_completa,))
+            row=cursor.fetchone() #Se lo trova la row non è None e quindi restituisce risultato
+            if row:#scheda_completa già presente
+                return row[0]
+            #Nuova scheda da inserire
+            query=f"""
+            INSERT INTO {self.nome_tabella_Scheda_tecnica[0]}({self.scheda_completa}) VALUES(?)
+                """
+            cursor.execute(query,(scheda_completa,))
+            return cursor.lastrowid
+        except sqlite3.Error as e:
+            print(e)
     def __insert_or_get_Azienda(self, cursor: sqlite3.Cursor, nome:str):
         lista_import=self.__get_lista_import()
         importazione=False
@@ -164,7 +192,7 @@ class Banca_Dati():
     def __insert_data(self, cursor: sqlite3.Cursor, Codice_AIC: str, Descrizione_prodotto:str, Forma_farmaceutica: str, Principio_Attivo:str, ATC_Descrizione:str,
                       Cod_gruppo:str, Descrizione_gruppo:str, Tipo_prodotto:str, Doping: str, Glutine:str, Stupefacente:str, Temperatura:str, 
                       Mesi_di_validità:str, Validità_dopo_apertura:str, Iva:str, Prz_Att:str, Imp_Assist:str, PrzRimE:str, Obbligatorietà:str, Particolarità:str, Cl: str,
-                      Prescrivibilità:str, Tipo_ricetta:str, Regime_SSN:str, Note_prescrizione:str,codice_azienda:int):           
+                      Prescrivibilità:str, Tipo_ricetta:str, Regime_SSN:str, Note_prescrizione:str,codice_azienda:int, codice_scheda_tecnica:int):           
         try:
             cursor.execute(f"SELECT {self.Farmaco_primarykey} FROM {self.nome_tabella_Farmaco[0]} WHERE '{self.codice_aic}' = ?", (Codice_AIC,))
             row=cursor.fetchone() #Se lo trova la row non è None e quindi restituisce risultato
@@ -176,12 +204,12 @@ class Banca_Dati():
                 {self.atc},{self.cod_gruppo},{self.descrizione_gruppo},{self.tipo_prodotto},{self.doping},{self.glutine},{self.stupefacente},{self.temperatura},
                 {self.mesi_validità},{self.validità_dopo_apertura},{self.iva},{self.prezzo},{self.importo_assistito},{self.prezzo_rimborso},
                 {self.obbligatorietà},{self.particolarità},{self.cl},{self.prescrivibilità},{self.tipo_ricetta},{self.regime_SSN},
-                {self.note},{self.codice_azienda}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                {self.note},{self.codice_azienda},{self.codice_scheda_tecnica}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """
             cursor.execute(query,(Codice_AIC,Descrizione_prodotto,Forma_farmaceutica,Principio_Attivo,ATC_Descrizione,Cod_gruppo,
                                 Descrizione_gruppo,Tipo_prodotto,Doping,Glutine,Stupefacente,Temperatura,Mesi_di_validità,
                                 Validità_dopo_apertura,Iva,Prz_Att,Imp_Assist,PrzRimE,Obbligatorietà,Particolarità,Cl,
-                                Prescrivibilità,Tipo_ricetta,Regime_SSN,Note_prescrizione,codice_azienda))
+                                Prescrivibilità,Tipo_ricetta,Regime_SSN,Note_prescrizione,codice_azienda, codice_scheda_tecnica))
             return cursor.lastrowid
         except sqlite3.Error as e:
             print(e)

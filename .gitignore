@@ -2,3 +2,12 @@
 __pycache__
 Backup/
 .env
+Data/inventario_mod_backup.csv
+Data/inventario_solo_farmaci.csv
+Data/inventario.csv
+Data/mapper_aic_foglietto_farmaco.json
+Data/chunks_farmaci.json
+Data/chunks_parafarmaci.json
+Data/Database.db
+Data/faiss_farmaci.index
+Data/faiss_parafarmaci.index
