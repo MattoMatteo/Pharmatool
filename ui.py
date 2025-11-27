@@ -145,7 +145,9 @@ class FinestraVendita(QDialog):
             self.aic = aic
 
         def run(self):#logica del thread che infine emette il segnale per aggiornare la grafica
-            lista_proposte = Model_class.doctor_stoned.get_similarity_product(self.aic)
+            print(self.aic)
+            lista_proposte = Model_class.doctor_stoned.get_similarity_product(self.aic, k=4)
+            print(lista_proposte)
             if not lista_proposte:
                 lista_proposte = []
             self.finished.emit(lista_proposte)
@@ -223,6 +225,7 @@ class FinestraVendita(QDialog):
         self.generatingProposta_thread.aic = f.Codice_AIC
         self.generatingProposta_thread.start()
         self.pushButton_PropostaAi.setDisabled(True)
+        self.textBrowser_SchedaTecnicaProprosta.clear()
         self.textBrowser_StatusPropostaAi_2.setText("Generazione in corso...")
 
     def Slot_Finished_propostaAi(self, lista_proposte:list):

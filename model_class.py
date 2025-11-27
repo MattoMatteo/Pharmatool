@@ -9,6 +9,7 @@ import requests
 
 import Middleware 
 
+
 class DoctorStoned():
     def __init__(self,
                  API_KEY:str,
@@ -53,8 +54,8 @@ class DoctorStoned():
                 {"role": "user", "content": prompt}
             ],
             "temperature": temperature, # Bassa temperatura per task deterministici
-            "usage": {"include": True}
-            #"max_tokens": 100
+            "usage": {"include": True},
+            "max_tokens": 32000
         }
         retry = 0
         max_retry = 3
@@ -63,6 +64,7 @@ class DoctorStoned():
                 response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(payload), timeout=30)
                 response.raise_for_status()
                 response = response.json()
+                print(response['choices'][0]['message']["reasoning"])
                 return response['choices'][0]['message']['content'].strip()
             except Exception as e:
                 print(f"⚠️ Errore API: {e}")
@@ -71,40 +73,39 @@ class DoctorStoned():
                 time.sleep(10)
         return "ERROR"
 
-    def _build_prompt(self, reference_product: str, neighbor_product:str) -> str:
+    def _build_prompt(self, farmaco: str, para:str) -> str:
         return f"""
-        Sei un assistente esperto in farmacologia.
-        Compito:
-        1) Ti verrà fornita la scheda tecnica di due prodotti farmaceutici, che possono essere Farmaci o Parafarmaci.
-        2) Anallizzali e decidi se il primo elemento della lista fornito è adatto come terapia complementare rispetto al secondo elemento.
-        3) Se decidi che esiste una correlazione valida, descrivermi brevemente a cosa serve il secondo elemento della lista e spiega perché lo hai scelto.
-        4) Se decidi che NON esiste una valida e diretta correlazione tra i due prodotti oppure se hai il dubbio, rispondi semplicemente con None.
-        5) La risposta finale deve essere solo una stringa (in caso di correlazione) oppure None (in caso contrario).
-    
-        Regole:
-        - Usa solo i nomi forniti.
-        - Se non sei assolutamente certo della correlazione tra i due prodotti, restituisci esclusivamente None.
-        - Non fare assunzioni o deduzioni: la certezza deve essere totale. Ne va della salute della persona.
-        - Usa un linguaggio semplice e chiaro comprensibile anche a chi non è del settore
-        - Non inventare nulla, rispondi solo con informazioni presenti nella scheda tecnica dei prodotti che ti viene fornita.
-        - Descrizione max 20 parole per voce.
-        - Restituisci SOLO JSON valido, quindi None senza virgolette (no stringa).
+            Sei un assistente esperto in farmacologia.
+            Compito:
+            1) Ti verrà fornita la scheda tecnica di un farmaco (primo elemento della lista) e di un parafarmaco (secondo elemento della lista).
+            2) Anallizzali e decidi se quel parafarmaco è adatto come terapia coadivante rispetto al farmaco.
+            3) Se decidi che esiste una correlazione valida, descrivermi brevemente a cosa serve il parafarmaco e spiega perché lo hai scelto.
+            4) Se decidi che NON esiste una valida e diretta correlazione tra i due prodotti oppure se hai il dubbio, rispondi semplicemente con None.
+            5) La risposta finale deve essere solo una stringa (in caso di correlazione) oppure None (in caso contrario).
+        
+            Regole:
+            - Usa solo i nomi forniti.
+            - Devi essere sufficientemente certo dell'utilità coadiuvante nella terapia del parafarmaco con il farmaco, restituisci esclusivamente None.
+            - Usa un linguaggio semplice e chiaro comprensibile anche a chi non è del settore
+            - Non inventare nulla, rispondi solo se presente nella sezione parafarmaci
+            - Descrizione max 20 parole per voce.
+            - Restituisci SOLO JSON valido, quindi None senza virgolette (no stringa) oppure una stringa.
 
-        Esempio:
-        input = [{{"file_name": "1002_12437", "content": "Virdex viene usato per alleviare i sintomi dell'emicrania quando questa si manifesta. Non è un trattamento preventivo, ma si assume durante l'attacco per ridurne intensità e durata"}},
-                {{"file_name": "EUGLYCEM 30CPR", "content": "VERTIGOVAL 20CPR": "Agisce migliorando le funzioni neurologiche, sostenendo la microcircolazione e riducendo sintomi associati alle alterazioni dell'equilibrio. Vertigoval aiuta a gestire sintomi associati come vertigini, nausea, instabilità e tensione nervosa"}}]
-        output = None
+            Esempio:
+            input = [{{"file_name": "1002_12437", "content": "Virdex viene usato per alleviare i sintomi dell'emicrania quando questa si manifesta. Non è un trattamento preventivo, ma si assume durante l'attacco per ridurne intensità e durata"}},
+                    {{"file_name": "EUGLYCEM 30CPR", "content": "VERTIGOVAL 20CPR": "Agisce migliorando le funzioni neurologiche, sostenendo la microcircolazione e riducendo sintomi associati alle alterazioni dell'equilibrio. Vertigoval aiuta a gestire sintomi associati come vertigini, nausea, instabilità e tensione nervosa"}}]
+            output = None
 
-        Esempio:
-        input = [{{"file_name":"7158_25680", "content": "Monuril è un antibiotico a base di fosfomicina che uccide i batteri responsabili delle infezioni e viene utilizzato per trattare le infezioni urinarie non complicate nelle donne e adolescenti, oltre che come profilassi antibiotica perioperatoria per la biopsia prostatica transrettale negli uomini adulti"}},
-                {{"file_name": "LONGLIFE D-MANNOSE 60CPS", "content": "d-mannose\nè un integratore alimentare a base di d-mannosio, uno zucchero semplice estratto dal legno di larice o di betulla, e uva ursina.\nper la sua azione protettiva sulle cellule uroepiteliali, il d-mannosio può rappresentare un'alternativa naturale e sicura per contribuire alla riduzione delle infezioni del tratto urinario e delle cistiti infettive.\ncoopera a quest'azione l'uva ursina, una delle piante medicinali maggiormente utilizzate per favorire la funzionalità delle vie urinarie e il drenaggio dei liquidi corporei, grazie alla presenza di arbutina, composto ad attività antisettica.\nsenza glutine."}}]
-        output = "Integratore che supporta le vie urinarie e riduce le cistiti; scelto perché complementare all'azione di Monuril."
+            Esempio:
+            input = [{{"file_name":"7158_25680", "content": "Monuril è un antibiotico a base di fosfomicina che uccide i batteri responsabili delle infezioni e viene utilizzato per trattare le infezioni urinarie non complicate nelle donne e adolescenti, oltre che come profilassi antibiotica perioperatoria per la biopsia prostatica transrettale negli uomini adulti"}},
+                    {{"file_name": "LONGLIFE D-MANNOSE 60CPS", "content": "d-mannose\nè un integratore alimentare a base di d-mannosio, uno zucchero semplice estratto dal legno di larice o di betulla, e uva ursina.\nper la sua azione protettiva sulle cellule uroepiteliali, il d-mannosio può rappresentare un'alternativa naturale e sicura per contribuire alla riduzione delle infezioni del tratto urinario e delle cistiti infettive.\ncoopera a quest'azione l'uva ursina, una delle piante medicinali maggiormente utilizzate per favorire la funzionalità delle vie urinarie e il drenaggio dei liquidi corporei, grazie alla presenza di arbutina, composto ad attività antisettica.\nsenza glutine."}}]
+            output = "Integratore che supporta le vie urinarie e riduce le cistiti; scelto perché coadiuvante all'azione di Monuril."
 
-        Ora tocca a te:
-        input = [{reference_product},
-                {neighbor_product}]
-        output = 
-        """.strip()
+            Ora tocca a te:
+            input = [{farmaco},
+                    {para}]
+            output = 
+            """.strip()
 
     def _validate_drug_similarity(self, similarity:dict, temperature:float):
         """
@@ -119,7 +120,7 @@ class DoctorStoned():
         """
         # Creiamo il dizionario con le info del farmaco e il suo dump
         reference_product_dict = {"file_name": similarity["reference_product"]["file_name"], "content": similarity["reference_product"]["content"]}
-        reference_product_dump = json.dumps(reference_product_dict)
+        reference_product_dump = json.dumps(reference_product_dict, ensure_ascii=True)
 
         # Creiamo la lista dei simili
         neighbor_products_list = similarity["neighbor_products"]
@@ -129,7 +130,7 @@ class DoctorStoned():
         llm_response[reference_product_dict["file_name"]] = {}
         for para in neighbor_products_list:
             neighbor_product_dict = {"file_name": para["product"]["file_name"], "content": para["product"]["content"]}
-            neighbor_product_dump = json.dumps(neighbor_product_dict)
+            neighbor_product_dump = json.dumps(neighbor_product_dict, ensure_ascii=False)
             llm_response[reference_product_dict["file_name"]][neighbor_product_dict["file_name"]] = self._call_llm(prompt=self._build_prompt(reference_product_dump, neighbor_product_dump),
                                                                                             system_prompt="",
                                                                                             model=self.model_id,
@@ -222,8 +223,8 @@ class DoctorStoned():
         Returns:
             list[tuple]: List of para_id and the LLM explain
         """
-
         product_chunks_similarities = self._find_similarity(aic, k)
+        print(product_chunks_similarities["reference_product"]["file_name"])
         if not product_chunks_similarities:
             return None
         product_chunks_validated = self._validate_drug_similarity(product_chunks_similarities, temperature)
@@ -265,7 +266,7 @@ doctor_stoned = DoctorStoned(API_KEY, "openai/gpt-oss-120b",
                              path_mapper_drugs_foglietto= "./Data/mapper_aic_foglietto_farmaco.json")
 
 if __name__== "__main__":
-    response = doctor_stoned.get_similarity_product("025680024")
+    response = doctor_stoned.get_similarity_product("041797010")
     if response:
         print(json.dumps(response, indent=2))
     else:
