@@ -48,7 +48,8 @@ class Farmaco_vendita():
     def __init__(self,Progressivo_riga:int=None,Codice_AIC: str=None,V:str=None,
                  Pr:int=None,ID_Ricetta:int=None,Prodotto:str=None,Prezzo:Money=None,
                  Qta:int=None,Sosp:int=None,Importo:Money=None,Pr_Rimborso:Money=None,Diff:Money=None,
-                 Quota:Money=None,Tot_Assistito:Money=None,Nota:str=None,Tk:str=None,Cl:str=None,Giac:int=None):
+                 Quota:Money=None,Tot_Assistito:Money=None,Nota:str=None,Tk:str=None,Cl:str=None,
+                 Giac:int=None,scheda_tecnica:str=None):
         
         self.Progressivo_riga=Progressivo_riga
         self.Codice_AIC=Codice_AIC 
@@ -68,6 +69,7 @@ class Farmaco_vendita():
         self.Tk=Tk
         self.Cl=Cl
         self.Giac=Giac
+        self.scheda_tecnica=scheda_tecnica
     
 class Ricetta_internalData():
     def __init__(self,id_ricetta:int=None,stato:str=None,numero:int=None,V:str=None,farmaco_1_AIC:str=None,farmaco_1_Descrizione:str=None,

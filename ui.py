@@ -1,10 +1,11 @@
 import PyQt5.uic
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QMainWindow, QDialog, QTableWidgetItem, QTableWidget
+from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem, QIcon
+from PyQt5.QtWidgets import QMainWindow, QDialog, QTableWidgetItem, QTableWidget, QPushButton, QListView, QTextBrowser
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from moneyed import Money, EUR, format_money
 from babel import Locale
 
+import Model_class  # <-- Andrebbe creato un nuovo middleware ma non ho tempo
 import Middleware
 
 locale=Locale.parse('it_IT')
@@ -95,22 +96,60 @@ class FinestraVendita(QDialog):
     def __init__(self):
         super().__init__()
         PyQt5.uic.loadUi("Data\\finestra_vendita.ui",self)
-        self.pushButton_Cerca.clicked.connect(self.Slot_ChiamaFinestraCerca) # type: ignore
+        # Dichiaro i tipi per comodità
+        self.tableWidget_Vendita:QTableWidget
+        self.tableWidget_ProposteAi:QTableWidget
+        self.pushButton_Cerca:QPushButton
+        self.pushButton_Vendi:QPushButton
+        self.pushButton_ricettaRossa:QPushButton
+        self.pushButton_PlusOne:QPushButton
+        self.pushButton_LessOne:QPushButton
+        self.pushButton_Delete:QPushButton
+        self.pushButton_attivaSospeso:QPushButton
+        self.pushButton_ritiraSospeso:QPushButton
+        self.pushButton_storicoVendite:QPushButton
+        self.pushButton_Ricette:QPushButton
+        self.pushButton_PropostaAi:QPushButton
+        self.pushButton_PropostaAi.setIcon(QIcon("./Data/PNG/ai_icon.png"))
+        self.textBrowser_StatusPropostaAi_2:QTextBrowser
+        self.textBrowser_schedaTecnicaSelsezione:QTextBrowser
+        self.textBrowser_valore_TotaliVenditaAttuale:QTextBrowser
+        self.textBrowser_SchedaTecnicaProprosta:QTextBrowser
+        # Setto le connessioni
+        self.tableWidget_Vendita.itemSelectionChanged.connect(self._newSelection)
+        self.tableWidget_ProposteAi.itemSelectionChanged.connect(self.update_scheda_proposte)
+        self.tableWidget_ProposteAi.doubleClicked.connect(self.insert_proposta_Ai)
+        self.pushButton_Cerca.clicked.connect(self.Slot_ChiamaFinestraCerca)
         self.pushButton_Vendi.clicked.connect(self.Slot_Vendi)
         self.pushButton_ricettaRossa.clicked.connect(self.Slot_chiudiRicetta)
         self.pushButton_PlusOne.clicked.connect(self.Slot_PlusOne)
-        self.tableWidget_Vendita.itemSelectionChanged.connect(self._newSelection)
         self.pushButton_LessOne.clicked.connect(self.Slot_LessOne)
         self.pushButton_Delete.clicked.connect(self.Slot_Delete)
         self.pushButton_attivaSospeso.clicked.connect(self.Slot_AttivaSospeso)
         self.pushButton_ritiraSospeso.clicked.connect(self.Slot_RitiraSospeso)
         self.pushButton_storicoVendite.clicked.connect(self.Slot_StoricoVendite)
         self.pushButton_Ricette.clicked.connect(self.Slot_Ricette)
+        self.pushButton_PropostaAi.clicked.connect(self.Slot_Start_propostaAi)
         #self.lineEdit_InserireCodice.setFocus()
-
+        # Altre classi
+        self.generatingProposta_thread = self.GeneratingProposta_thread()
+        self.generatingProposta_thread.finished.connect(self.Slot_Finished_propostaAi)
         self.update_row()
 
     #class annidate
+    class GeneratingProposta_thread(QThread):
+        finished=pyqtSignal(list)
+
+        def __init__(self, aic:str=None, parent=None):
+            super().__init__(parent)
+            self.aic = aic
+
+        def run(self):#logica del thread che infine emette il segnale per aggiornare la grafica
+            lista_proposte = Model_class.doctor_stoned.get_similarity_product(self.aic)
+            if not lista_proposte:
+                lista_proposte = []
+            self.finished.emit(lista_proposte)
+
     class FinestraAttivaSospeso(QDialog):
             def __init__(self,Qta:int, Sosp:int, nMaxPezzi:int=None):
                 super().__init__()
@@ -142,6 +181,83 @@ class FinestraVendita(QDialog):
                 self.Qta=self.nMaxPezzi-self.Sosp
                 self.spinBox_oraRitira.setValue(self.Qta)
     #Slot
+
+    def insert_proposta_Ai(self):
+        items = self.tableWidget_ProposteAi.selectedItems()
+        if len(items)>0:
+            row=items[0].row()
+            item = self.tableWidget_ProposteAi.item(row, 0)
+            info = Middleware.middlwareDatabase.cerca_farmaco(item.text(),
+                                        Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione,
+                                        [Middleware.middlwareDatabase.tipoRicercaBancadati.ID_Farmaco])
+            if info and len(info)>0 and info[0] and len(info[0])>0:
+                id_farmaco = info[0][0]
+            else:
+                return -1
+            self._addItemToQtableWidgetItem(id_farmaco)
+
+    def update_scheda_proposte(self):
+        # Visualizziamo sua scheda tecnica
+        items=self.tableWidget_ProposteAi.selectedItems()
+        self.textBrowser_StatusPropostaAi_2.clear()
+        if len(items)>0:
+            row=items[0].row()
+            item = self.tableWidget_ProposteAi.item(row, 0)
+            info = Middleware.middlwareDatabase.get_scheda_tecnica(item.text(),
+                                                    Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione)
+            if info and len(info)>0 and info[0] and len(info[0])>0:
+                testo_scheda_tecnica = info[0][0]
+            else:
+                testo_scheda_tecnica = ""
+            self.textBrowser_SchedaTecnicaProprosta.setText(testo_scheda_tecnica)
+
+    def Slot_Start_propostaAi(self):
+        if not self.pushButton_PropostaAi.isEnabled():
+            return -1 # E' in corso una generazione
+        if not self.tableWidget_Vendita.selectedItems():
+            return -1 #non ci sono item selezionati
+        self.tableWidget_ProposteAi.setRowCount(0)
+        row=self.tableWidget_Vendita.selectedItems()[0].row()
+        f=Middleware.middlwareDatabase.get_all_FarmacoVendita_data()
+        f=f[row]
+        self.generatingProposta_thread.aic = f.Codice_AIC
+        self.generatingProposta_thread.start()
+        self.pushButton_PropostaAi.setDisabled(True)
+        self.textBrowser_StatusPropostaAi_2.setText("Generazione in corso...")
+
+    def Slot_Finished_propostaAi(self, lista_proposte:list):
+        print(f"LISTA_PROPOSTE_UI: {lista_proposte}")
+        self.pushButton_PropostaAi.setEnabled(True)
+
+        if lista_proposte and len(lista_proposte) == 0:
+            self.textBrowser_StatusPropostaAi_2.setText("Nessuna proposta trovata.")
+            return -1 # Nessuna proprosta trovata
+        self.textBrowser_StatusPropostaAi_2.setText("Completato.")
+
+        self.tableWidget_ProposteAi.setRowCount(0)
+        for i, proposta in enumerate(lista_proposte):
+            info = Middleware.middlwareDatabase.cerca_farmaco(proposta[0],
+                            Middleware.middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
+                            [Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione])
+            if info and len(info) > 0 and info[0] and len(info[0]) > 0:
+                proposta[0] = info[0][0]
+            # aggiungo una nuova riga
+            self.tableWidget_ProposteAi.insertRow(i)
+            # colonna 0: Codice / nome
+            item0 = QTableWidgetItem(proposta[0])
+            print(proposta[0])
+            print(item0)
+            self.tableWidget_ProposteAi.setItem(i, 0, item0)
+
+            # colonna 1: altra informazione
+            item1 = QTableWidgetItem(proposta[1])
+            self.tableWidget_ProposteAi.setItem(i, 1, item1)
+            print(proposta[1])
+            print(item1)
+
+        # se vuoi, puoi ridimensionare automaticamente le colonne
+        self.tableWidget_ProposteAi.resizeColumnsToContents()
+        return 1
 
     def Slot_Ricette(self):
         finestra_ricette= FinestraRicette()
@@ -221,6 +337,17 @@ class FinestraVendita(QDialog):
         #Update Grafica
         self.update_row(row_to_focus=row_to_focus)
 
+    def _update_scheda_tecnica_selezione(self, row):
+        # Visualizziamo sua scheda tecnica
+        item = self.tableWidget_Vendita.item(row, get_columnIndex_tableWidget_byName(self.tableWidget_Vendita,"Prodotto"))
+        info = Middleware.middlwareDatabase.get_scheda_tecnica(item.text(),
+                                                Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione)
+        if info and len(info)>0 and info[0] and len(info[0])>0:
+            testo_scheda_tecnica = info[0][0]
+        else:
+            testo_scheda_tecnica = ""
+        self.textBrowser_schedaTecnicaSelsezione.setText(testo_scheda_tecnica)
+
     def _newSelection(self):
         items=self.tableWidget_Vendita.selectedItems()
         if len(items)>0:
@@ -253,6 +380,7 @@ class FinestraVendita(QDialog):
                                                             border: 1px solid gray;
                                                             padding: 4px;}
                                                     """)
+            self._update_scheda_tecnica_selezione(row)
 
     def update_row(self, row_to_focus:int=0):
         farmaciRicettaInCorso=Middleware.middlwareDatabase.farmaci_ricetta_in_corso()
@@ -322,11 +450,13 @@ class FinestraVendita(QDialog):
             self.tableWidget_Vendita.setItem(i,get_columnIndex_tableWidget_byName(self.tableWidget_Vendita,"Giac"),self._newTableWidgetItem(value=str(row.Giac),color=color))
 
         self.textBrowser_valore_TotaliVenditaAttuale.setText(format_money(totale,locale=locale))
+
         self.tableWidget_Vendita.resizeColumnsToContents()
         try:
             self.tableWidget_Vendita.selectRow(row_to_focus)
+            self._update_scheda_tecnica_selezione(row_to_focus)
         except:
-            pass
+            self.textBrowser_schedaTecnicaSelsezione.clear()
 
     def _get_tipo_ricetta(self)->str:
         tipo_vendita=self.comboBox_TipoVendita.currentText()

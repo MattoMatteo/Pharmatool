@@ -52,6 +52,7 @@ class Middlware_Database():
         Forma_farmaceutica          =   "Forma farmaceutica"
         Prezzo_attuale              =   "Prezzo attuale"
         Cl                          =   "Cl"
+        SCHEDA_TECNICA              =   "Scheda tecnica"
     
     #Vari Database implementati
     class Middleware_SQLITE():
@@ -81,8 +82,11 @@ class Middlware_Database():
                 return Database.Banca_dati.nome_tabella_Azienda[1]+"."+Database.Banca_dati.nome_azienda
             elif type==Middlware_Database.tipoRicercaBancadati.Cl:
                 return Database.Banca_dati.nome_tabella_Farmaco[1]+"."+Database.Banca_dati.cl
+            elif type==Middlware_Database.tipoRicercaBancadati.SCHEDA_TECNICA:
+                return Database.Banca_dati.nome_tabella_Scheda_tecnica[1]+"."+Database.Banca_dati.scheda_completa
+            
         def get_all_FarmacoVendita_data_SQLITE() -> list[Internal_data.Farmaco_vendita]:
-            farmaci = Database.execute_query(f""" SELECT b.{Database.Banca_dati.codice_aic},
+            query=(f""" SELECT b.{Database.Banca_dati.codice_aic},
                             b.{Database.Banca_dati.descrizione_farmaco},
                             b.{Database.Banca_dati.prezzo},
                             b.{Database.Banca_dati.importo_assistito},
@@ -95,16 +99,19 @@ class Middlware_Database():
                             v.{Database.vendita.numero_progressivo_ricetta},
                             v.{Database.vendita.referencesToRicette},
                             v.{Database.vendita.quantità},
-                            v.{Database.vendita.sospesi}
+                            v.{Database.vendita.sospesi},
+                            s.{Database.Banca_dati.scheda_completa}
                     FROM {Database.vendita.nome} v
                     LEFT JOIN {Database.Banca_dati.nome_tabella_Farmaco[0]} b ON v.{Database.vendita.referencesToBancaDati} = b.{Database.Banca_dati.Farmaco_primarykey}
+                    LEFT JOIN {Database.Banca_dati.nome_tabella_Scheda_tecnica[0]} s ON s.{Database.Banca_dati.Scheda_tecnica_primarykey} = b.{Database.Banca_dati.Farmaco_primarykey}
                 """)
+            farmaci = Database.execute_query(query)
             lista_farmaci=[]
             for i,farmaco in enumerate(farmaci):
                 progressivo_riga=i+1 #credo
                 new_farmaco=Internal_data.Farmaco_vendita()
                 #AIC: [0], Descrizione Farmaco: [1], Prezzo: [2], Importo Assistito: [3], Prezzo Rimborso: [4], None: [5], Tipo Ricetta: [6], Cl: [7],
-                #ID Farmaco: [8], V: [9], Pr: [10], ID Ricetta: [11], Qta: [12], Sosp: [13] 
+                #ID Farmaco: [8], V: [9], Pr: [10], ID Ricetta: [11], Qta: [12], Sosp: [13] , Sched. [14]
                 new_farmaco.Progressivo_riga    =   progressivo_riga
                 new_farmaco.Codice_AIC          =   farmaco[0]
                 new_farmaco.V                   =   farmaco[9]
@@ -134,6 +141,7 @@ class Middlware_Database():
                 new_farmaco.Tk                  =   farmaco[6]
                 new_farmaco.Cl                  =   farmaco[7]
                 new_farmaco.Giac                =   Database.Magazzino_Principale.get_giacenza(codice_farmaco=farmaco[8])
+                new_farmaco.scheda_tecnica      =   farmaco[14]
 
                 lista_farmaci.append(new_farmaco)
 
@@ -227,6 +235,10 @@ class Middlware_Database():
                 colonne_da_visualizzare_convertito.append(Middlware_Database.Middleware_SQLITE.convert_tipoRicercaBancadati_SQLITE(type=colonna))
             return Database.Banca_dati.cerca_farmaco(tipo_di_ricerca=tipo_di_ricerca,input=input,colonne_da_visualizzare=colonne_da_visualizzare_convertito)
     
+        def get_scheda_tecnica_SQLITE(input:str,tipo_di_ricerca:Enum)->list:
+            tipo_di_ricerca=Middlware_Database.Middleware_SQLITE.convert_tipoRicercaBancadati_SQLITE(type=tipo_di_ricerca)
+            return Database.Banca_dati.get_scheda_tecnica(tipo_di_ricerca=tipo_di_ricerca, input=input,)
+
     #Init
     def __init__(self,activeDatabase:chosenDatabaseMiddleware):
         self.chosenDatabase=activeDatabase
@@ -388,5 +400,9 @@ class Middlware_Database():
     def cerca_farmaco(self,input:str,tipo_di_ricerca:Enum,colonne_da_visualizzare:list[Enum])->list:
         if self.chosenDatabase==self.chosenDatabaseMiddleware.SQLITE:
             return self.Middleware_SQLITE.cerca_farmaco_SQLITE(input=input,tipo_di_ricerca=tipo_di_ricerca,colonne_da_visualizzare=colonne_da_visualizzare)
+    def get_scheda_tecnica(self,input:str,tipo_di_ricerca:Enum)->list:
+        if self.chosenDatabase==self.chosenDatabaseMiddleware.SQLITE:
+            return self.Middleware_SQLITE.get_scheda_tecnica_SQLITE(input=input,
+                                                                    tipo_di_ricerca=tipo_di_ricerca)
 
 middlwareDatabase = Middlware_Database(activeDatabase=Middlware_Database.chosenDatabaseMiddleware.SQLITE)

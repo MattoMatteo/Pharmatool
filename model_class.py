@@ -7,7 +7,7 @@ import numpy as np
 from dotenv import load_dotenv
 import requests
 
-from Middleware import middlwareDatabase
+import Middleware 
 
 class DoctorStoned():
     def __init__(self,
@@ -149,10 +149,10 @@ class DoctorStoned():
             list: List of chunks items, ready for validation step.
         """
         # Define if it is a drugs or not
-        info = middlwareDatabase.cerca_farmaco(aic,
-                                        middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
-                                        [middlwareDatabase.tipoRicercaBancadati.Cl,
-                                         middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione])
+        info = Middleware.middlwareDatabase.cerca_farmaco(aic,
+                                        Middleware.middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
+                                        [Middleware.middlwareDatabase.tipoRicercaBancadati.Cl,
+                                         Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione])
         cl = None
         if info and len(info) > 0:
             if info[0] and len(info[0]) > 0:
@@ -177,7 +177,11 @@ class DoctorStoned():
                 _, indices = self.faiss_para.search(drugs_embeddings, k)
                 # Compose response struct for next step of pipeline
                 def _convert_chunk_para_file_name_from_denominazione_to_aic(denominazione:dict, aic:str):
-                    denominazione["file_name"] = aic
+                    info = Middleware.middlwareDatabase.cerca_farmaco(denominazione["file_name"],
+                                Middleware.middlwareDatabase.tipoRicercaBancadati.Denominazione_e_Confezione,
+                                [Middleware.middlwareDatabase.tipoRicercaBancadati.Codice_AIC])
+                    if info and len(info) > 0 and info[0] and len(info[0]) > 0:
+                        denominazione["file_name"] = info[0][0]
                     return denominazione
                 return {"reference_product": next(item for item in self.chunks_drug if item["file_name"] == file_name_foglietto),
                         "neighbor_products": [{"product": _convert_chunk_para_file_name_from_denominazione_to_aic(self.chunks_para[x], aic)} for x in indices[0]]}
@@ -225,26 +229,27 @@ class DoctorStoned():
         product_chunks_validated = self._validate_drug_similarity(product_chunks_similarities, temperature)
         if not product_chunks_validated:
             return None
-        list_para_id = []
+        list_para_aic = []
         for chunk in product_chunks_validated.values():
             for product_name, llm_comment in chunk.items():
                 if not llm_comment: # <- Not validate from LLM
                     continue
                 # Find id by file name (same as Denominazione e confezione)
-                info = middlwareDatabase.cerca_farmaco(product_name,
-                        middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
-                        [middlwareDatabase.tipoRicercaBancadati.ID_Farmaco])
+                info = Middleware.middlwareDatabase.cerca_farmaco(product_name,
+                        Middleware.middlwareDatabase.tipoRicercaBancadati.Codice_AIC,
+                        [Middleware.middlwareDatabase.tipoRicercaBancadati.Codice_AIC])
                 # Ensure results
                 if info and len(info) > 0 and info[0] and len(info[0]) > 0:
-                    para_id = info[0][0]
-                    if not para_id:
+                    para_aic = info[0][0]
+                    if not para_aic:
                         return None
                 else:
                     return None
                 # Add to list the tuple of id and LLM response
-                list_para_id.append((para_id, llm_comment))
-        if list_para_id:
-            return list_para_id
+                list_para_aic.append([para_aic, llm_comment])
+        print(f"RISULTATI: {list_para_aic}")
+        if list_para_aic:
+            return list_para_aic
         return None
 
 load_dotenv(override=True)
@@ -260,7 +265,7 @@ doctor_stoned = DoctorStoned(API_KEY, "openai/gpt-oss-120b",
                              path_mapper_drugs_foglietto= "./Data/mapper_aic_foglietto_farmaco.json")
 
 if __name__== "__main__":
-    response = doctor_stoned.get_similarity_product("039352012")
+    response = doctor_stoned.get_similarity_product("025680024")
     if response:
         print(json.dumps(response, indent=2))
     else:

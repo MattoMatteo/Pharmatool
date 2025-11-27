@@ -223,7 +223,15 @@ class Banca_Dati():
         query=f"""
                 SELECT {colonne}
                 FROM {self.nome_tabella_Farmaco[0]} {self.nome_tabella_Farmaco[1]} 
-                JOIN {self.nome_tabella_Azienda[0]} {self.nome_tabella_Azienda[1]} ON {self.nome_tabella_Farmaco[1]}.{self.codice_azienda}={self.nome_tabella_Azienda[1]}.{self.Azienda_primarykey}
+                jOIN {self.nome_tabella_Azienda[0]} {self.nome_tabella_Azienda[1]} ON {self.nome_tabella_Farmaco[1]}.{self.codice_azienda}={self.nome_tabella_Azienda[1]}.{self.Azienda_primarykey}
+                WHERE {tipo_di_ricerca} LIKE '{input}%'
+                """
+        return execute_query(query=query)
+    def get_scheda_tecnica(self, tipo_di_ricerca,input):
+        query=f"""
+                SELECT {self.nome_tabella_Scheda_tecnica[1]}.{self.scheda_completa}
+                FROM {self.nome_tabella_Farmaco[0]} {self.nome_tabella_Farmaco[1]} 
+                jOIN {self.nome_tabella_Scheda_tecnica[0]} {self.nome_tabella_Scheda_tecnica[1]} ON {self.nome_tabella_Farmaco[1]}.{self.codice_scheda_tecnica}={self.nome_tabella_Scheda_tecnica[1]}.{self.Scheda_tecnica_primarykey}
                 WHERE {tipo_di_ricerca} LIKE '{input}%'
                 """
         return execute_query(query=query)
